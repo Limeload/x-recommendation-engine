@@ -101,20 +101,20 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-black text-white">
+    <div className="min-h-screen bg-white text-gray-900">
       {/* Header */}
-      <header className="border-b border-gray-700 sticky top-0 bg-black bg-opacity-80 backdrop-blur z-40">
-        <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <h1 className="text-2xl font-bold">
-              𝕏 Recommendation Engine
+      <header className="border-b border-gray-200 sticky top-0 bg-white z-40">
+        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+          <div className="flex items-center space-x-6">
+            <h1 className="text-xl font-bold tracking-tight">
+              Recommendation Engine
             </h1>
             <span className="text-gray-500 text-sm">
-              Explainable • Personalized • Tunable
+              Intelligent Ranking • Full Transparency • Complete Control
             </span>
           </div>
 
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-3">
             <UserSelector
               users={users}
               selectedUserId={selectedUserId}
@@ -123,14 +123,14 @@ export default function Home() {
 
             <button
               onClick={() => setShowTuning(!showTuning)}
-              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-full font-bold transition"
+              className="px-4 py-2 bg-gray-900 hover:bg-gray-800 rounded-lg font-medium transition text-white text-sm"
             >
-              {showTuning ? 'Hide' : 'Tuning Dashboard'}
+              {showTuning ? 'Hide' : 'Settings'}
             </button>
 
             <button
               onClick={() => fetchRanking()}
-              className="px-4 py-2 bg-gray-900 hover:bg-gray-800 border border-gray-700 rounded-full transition"
+              className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition text-gray-900 text-sm font-medium"
             >
               Refresh
             </button>
@@ -138,7 +138,7 @@ export default function Home() {
         </div>
       </header>
 
-      <div className="max-w-6xl mx-auto flex gap-6 py-6 px-4">
+      <div className="max-w-7xl mx-auto flex gap-8 py-8 px-6">
         {/* Main Feed */}
         <div className="flex-1">
           <FeedComponent

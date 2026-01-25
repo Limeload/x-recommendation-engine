@@ -26,9 +26,9 @@ export default function FeedComponent({
         {[...Array(5)].map((_, i) => (
           <div
             key={i}
-            className="border border-gray-700 rounded-lg p-4 animate-pulse bg-gray-900"
+            className="border border-gray-200 rounded-lg p-4 animate-pulse bg-gray-50"
           >
-            <div className="h-20 bg-gray-700 rounded" />
+            <div className="h-20 bg-gray-200 rounded" />
           </div>
         ))}
       </div>
@@ -37,16 +37,16 @@ export default function FeedComponent({
 
   if (tweets.length === 0) {
     return (
-      <div className="border border-gray-700 rounded-lg p-8 text-center text-gray-500">
-        No tweets to display. Try adjusting your filters or weights.
+      <div className="border border-gray-200 rounded-lg p-12 text-center text-gray-500">
+        <p className="text-sm">No tweets to display. Try adjusting your filters or weights.</p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-0 border border-gray-700 rounded-lg overflow-hidden bg-gray-900">
+    <div className="border border-gray-200 rounded-lg overflow-hidden bg-white">
       {tweets.map((rankedTweet, index) => (
-        <div key={rankedTweet.tweet.tweet_id} className="border-b border-gray-700 last:border-b-0">
+        <div key={rankedTweet.tweet.tweet_id} className="border-b border-gray-100 last:border-b-0">
           <TweetCard rankedTweet={rankedTweet} rank={index + 1} />
         </div>
       ))}

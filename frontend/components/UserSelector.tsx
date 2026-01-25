@@ -6,10 +6,11 @@
 'use client';
 
 import React, { useState } from 'react';
-import { User } from '@/types';
+import { User, CaretDown, Check } from 'phosphor-react';
+import { User as UserType } from '@/types';
 
 interface UserSelectorProps {
-  users: User[];
+  users: UserType[];
   selectedUserId: string;
   onSelect: (userId: string) => void;
 }
@@ -27,15 +28,15 @@ export default function UserSelector({
     <div className="relative">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="px-4 py-2 bg-gray-900 hover:bg-gray-800 border border-gray-700 rounded-lg text-sm font-semibold flex items-center space-x-2 transition"
+        className="px-3 py-2 bg-gray-100 hover:bg-gray-200 border border-gray-300 rounded-lg text-sm font-medium flex items-center space-x-2 transition text-gray-900"
       >
-        <span>👤</span>
+        <User size={16} weight="bold" />
         <span>{selectedUser?.username || 'Select User'}</span>
-        <span className="text-xs">▼</span>
+        <CaretDown size={12} weight="bold" />
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-64 bg-gray-900 border border-gray-700 rounded-lg shadow-xl z-50 max-h-96 overflow-y-auto">
+        <div className="absolute right-0 mt-2 w-64 bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-96 overflow-y-auto">
           {users.map((user) => (
             <button
               key={user.user_id}
@@ -43,14 +44,14 @@ export default function UserSelector({
                 onSelect(user.user_id);
                 setIsOpen(false);
               }}
-              className={`w-full text-left px-4 py-3 border-b border-gray-800 hover:bg-gray-800 transition flex items-start justify-between ${
-                user.user_id === selectedUserId ? 'bg-gray-800' : ''
+              className={`w-full text-left px-4 py-3 border-b border-gray-100 hover:bg-gray-50 transition flex items-start justify-between ${
+                user.user_id === selectedUserId ? 'bg-gray-50' : ''
               }`}
             >
               <div className="flex-1 min-w-0">
-                <div className="font-semibold text-sm">{user.username}</div>
-                <div className="text-xs text-gray-500 flex items-center space-x-1 mt-1">
-                  <span className="px-2 py-0.5 bg-gray-700 rounded">
+                <div className="font-medium text-sm text-gray-900">{user.username}</div>
+                <div className="text-xs text-gray-600 flex items-center space-x-1 mt-1">
+                  <span className="px-2 py-0.5 bg-gray-100 rounded text-gray-700">
                     {user.persona}
                   </span>
                   <span>·</span>
@@ -61,7 +62,7 @@ export default function UserSelector({
                 </div>
               </div>
               {user.user_id === selectedUserId && (
-                <span className="ml-2 text-blue-500 font-bold">✓</span>
+                <Check size={16} weight="bold" className="ml-2 text-gray-900" />
               )}
             </button>
           ))}

@@ -6,6 +6,7 @@
 'use client';
 
 import React from 'react';
+import { CheckCircle } from 'phosphor-react';
 import { RankingExplanation } from '@/types';
 
 interface ExplanationPanelProps {
@@ -22,9 +23,9 @@ export default function ExplanationPanel({
     return (
       <div key={label} className="mb-3">
         <div className="flex items-center justify-between text-xs mb-1">
-          <span className="font-semibold text-gray-300">{label}</span>
+          <span className="font-semibold text-gray-900">{label}</span>
           <div className="text-right">
-            <div className="font-bold text-blue-500">
+            <div className="font-semibold text-gray-900">
               {(score * 100).toFixed(0)}%
             </div>
             <div className="text-gray-500 text-xs">
@@ -33,9 +34,9 @@ export default function ExplanationPanel({
           </div>
         </div>
 
-        <div className="w-full h-2 bg-gray-700 rounded-full overflow-hidden">
+        <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
           <div
-            className="h-full bg-blue-600 transition-all"
+            className="h-full bg-gray-800 transition-all"
             style={{ width: `${percentage}%` }}
           />
         </div>
@@ -44,12 +45,12 @@ export default function ExplanationPanel({
   };
 
   return (
-    <div className="mt-4 p-3 bg-gray-800 border border-gray-700 rounded text-sm space-y-3">
+    <div className="mt-4 p-3 bg-gray-50 border border-gray-200 rounded text-sm space-y-3">
       {/* Main Score */}
-      <div className="border-b border-gray-700 pb-3">
+      <div className="border-b border-gray-200 pb-3">
         <div className="flex items-center justify-between">
-          <span className="font-bold">Overall Score</span>
-          <span className="text-lg font-bold text-green-500">
+          <span className="font-semibold text-gray-900">Overall Score</span>
+          <span className="text-lg font-semibold text-gray-900">
             {(explanation.total_score * 100).toFixed(1)}%
           </span>
         </div>
@@ -57,7 +58,7 @@ export default function ExplanationPanel({
 
       {/* Component Scores */}
       <div>
-        <div className="font-semibold text-gray-300 mb-2">Score Breakdown:</div>
+        <div className="font-semibold text-gray-900 mb-2">Score Breakdown:</div>
 
         {renderScoreBar(
           explanation.recency_score,
@@ -81,19 +82,19 @@ export default function ExplanationPanel({
         )}
 
         {explanation.diversity_penalty > 0 && (
-          <div className="mt-2 text-xs text-gray-400">
+          <div className="mt-2 text-xs text-red-600">
             Diversity Penalty: -{(explanation.diversity_penalty * 100).toFixed(1)}%
           </div>
         )}
       </div>
 
       {/* Key Factors */}
-      <div className="border-t border-gray-700 pt-3">
-        <div className="font-semibold text-gray-300 mb-2">Why This Ranked:</div>
+      <div className="border-t border-gray-200 pt-3">
+        <div className="font-semibold text-gray-900 mb-2">Why This Ranked:</div>
         <ul className="space-y-1">
           {explanation.key_factors.map((factor, idx) => (
-            <li key={idx} className="text-xs text-gray-400 flex items-start">
-              <span className="text-green-500 mr-2">✓</span>
+            <li key={idx} className="text-xs text-gray-700 flex items-start">
+              <CheckCircle size={14} weight="bold" className="text-gray-600 mr-2 flex-shrink-0 mt-0.5" />
               <span>{factor}</span>
             </li>
           ))}
@@ -102,8 +103,8 @@ export default function ExplanationPanel({
 
       {/* Persona Match */}
       {explanation.persona_match && (
-        <div className="border-t border-gray-700 pt-3">
-          <div className="inline-block px-2 py-1 bg-blue-900 text-blue-300 rounded text-xs font-semibold">
+        <div className="border-t border-gray-200 pt-3">
+          <div className="inline-block px-2 py-1 bg-gray-200 text-gray-900 rounded text-xs font-semibold">
             Matches {explanation.persona_match} persona
           </div>
         </div>
