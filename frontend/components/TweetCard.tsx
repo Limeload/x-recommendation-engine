@@ -63,15 +63,15 @@ export default function TweetCard({ rankedTweet, rank }: TweetCardProps) {
               <ChatCircle size={16} weight="light" />
               <span>{tweet.replies}</span>
             </div>
-            <div className="flex items-center space-x-2 hover:text-royal-300">
+            <div className="flex items-center space-x-2 hover:text-gray-900">
               <Repeat size={16} weight="light" />
               <span>{tweet.retweets}</span>
             </div>
-            <div className="flex items-center space-x-2 hover:text-royal-300">
+            <div className="flex items-center space-x-2 hover:text-gray-900">
               <Heart size={16} weight="light" />
               <span>{tweet.likes}</span>
             </div>
-            <div className="flex items-center space-x-2 hover:text-royal-300">
+            <div className="flex items-center space-x-2 hover:text-gray-900">
               <BookmarkSimple size={16} weight="light" />
               <span>{tweet.bookmarks}</span>
             </div>
