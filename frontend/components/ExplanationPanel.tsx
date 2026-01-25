@@ -3,7 +3,6 @@
  * Shows detailed breakdown of why a tweet was ranked
  */
 
-/** @jsx React.createElement */
 'use client';
 
 import React from 'react';

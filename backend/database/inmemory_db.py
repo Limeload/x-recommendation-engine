@@ -6,7 +6,7 @@ and PostgreSQL/MongoDB for relational data
 
 from typing import List, Dict, Optional
 from datetime import datetime
-from .schemas import Tweet, User, EngagementGraph, EngagementEvent
+from models.schemas import Tweet, User, EngagementGraph, EngagementEvent
 
 
 class InMemoryDB:
