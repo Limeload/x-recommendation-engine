@@ -82,12 +82,16 @@ install_deps() {
     print_info "Installing backend dependencies..."
     cd "$SCRIPT_DIR/backend"
 
-    if [ ! -d "venv" ]; then
-        python3 -m venv venv
-        print_success "Virtual environment created"
+    # Remove and recreate venv if it exists to avoid architecture issues
+    if [ -d "venv" ]; then
+        rm -rf venv
     fi
 
+    python3 -m venv venv
+    print_success "Virtual environment created"
+
     source venv/bin/activate
+    pip install --upgrade pip -q
     pip install -q -r requirements.txt
     deactivate
     print_success "Backend dependencies installed"
