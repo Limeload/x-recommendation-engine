@@ -6,8 +6,8 @@ Generates realistic synthetic personas and engagement patterns
 import random
 from datetime import datetime, timedelta
 from typing import List, Tuple
-from .schemas import User, UserPersona, Tweet, EngagementEvent
-from ..models.ranking_engine import RankingEngine
+from models.schemas import User, UserPersona, Tweet, EngagementEvent
+from models.ranking_engine import RankingEngine
 
 
 class SyntheticDataGenerator:

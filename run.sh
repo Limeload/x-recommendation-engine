@@ -87,7 +87,12 @@ install_deps() {
         rm -rf venv
     fi
 
-    python3 -m venv venv
+    # On macOS, force ARM64 architecture for consistency
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+        arch -arm64 python3.11 -m venv venv
+    else
+        python3 -m venv venv
+    fi
     print_success "Virtual environment created"
 
     source venv/bin/activate
@@ -126,7 +131,12 @@ start_backend() {
     source venv/bin/activate
 
     export PYTHONUNBUFFERED=1
-    python main.py &
+    # Force ARM64 on macOS to avoid architecture mismatch with binaries
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+        arch -arm64 python main.py &
+    else
+        python main.py &
+    fi
     BACKEND_PID=$!
 
     sleep 2
