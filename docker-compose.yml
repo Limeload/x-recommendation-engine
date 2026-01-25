@@ -1,0 +1,45 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - DEBUG=true
+      - USE_VECTOR_DB=false
+    volumes:
+      - ./backend:/app
+    command: uvicorn main:app --reload --host 0.0.0.0
+    networks:
+      - recommendation-engine
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8000
+    depends_on:
+      - backend
+    networks:
+      - recommendation-engine
+
+  # Optional: Pinecone Vector Database
+  # weaviate:
+  #   image: semitechnologies/weaviate:latest
+  #   ports:
+  #     - "8080:8080"
+  #   environment:
+  #     QUERY_DEFAULTS_LIMIT: 25
+  #     AUTHENTICATION_ANONYMOUS_ACCESS_ENABLED: 'true'
+  #   networks:
+  #     - recommendation-engine
+
+networks:
+  recommendation-engine:
+    driver: bridge
