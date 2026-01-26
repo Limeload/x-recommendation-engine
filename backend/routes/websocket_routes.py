@@ -4,10 +4,20 @@ Handles connections for notifications, trending topics, and feed updates
 """
 
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Query, HTTPException
+from pydantic import BaseModel
+from typing import Dict, Any
 from routes.websocket_manager import get_websocket_manager
 import logging
 
 logger = logging.getLogger(__name__)
+
+
+class WebSocketStats(BaseModel):
+    """WebSocket connection statistics"""
+    active_users: int
+    total_user_connections: int
+    global_connections: int
+    total_connections: int
 
 router = APIRouter(tags=["websocket"])
 
@@ -195,17 +205,18 @@ async def websocket_engagement(websocket: WebSocket, tweet_id: str):
         logger.info(f"Client unsubscribed from engagement updates for tweet {tweet_id}")
 
 
-@router.get("/ws/stats")
-async def get_websocket_stats():
+@router.get("/ws/stats", response_model=WebSocketStats)
+async def get_websocket_stats() -> WebSocketStats:
     """
     Get real-time WebSocket connection statistics
 
     Returns:
-        Dictionary with connection stats:
+        WebSocketStats with connection stats:
         - active_users: Number of users with open connections
         - total_user_connections: Total user-specific connections
         - global_connections: Total global broadcast connections
         - total_connections: Sum of all connections
     """
     manager = get_websocket_manager()
-    return manager.get_connection_stats()
+    stats = manager.get_connection_stats()
+    return WebSocketStats(**stats)
