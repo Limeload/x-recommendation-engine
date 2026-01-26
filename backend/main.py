@@ -18,8 +18,23 @@ from models.schemas import (
     UserPersona,
 )
 from models.ranking_engine import RankingEngine
+from models.spam_detector import SpamDetector, init_spam_detector
 from database.inmemory_db import InMemoryDB
 from simulation.synthetic_data import SyntheticDataGenerator
+from routes.notifications_routes import (
+    router as notifications_router,
+    notification_manager,
+    init_notification_manager,
+)
+from routes.conversations_routes import router as conversations_router
+from routes.profile_routes import router as profile_router
+from routes.experiments_routes import (
+    router as experiments_router,
+    experiment_manager,
+    init_experiment_manager,
+)
+from routes.websocket_routes import router as websocket_router
+from routes.websocket_manager import get_websocket_manager
 
 # Setup logging
 logging.basicConfig(level=logging.INFO)
@@ -43,6 +58,26 @@ app.add_middleware(
 
 # Global database instance
 db = InMemoryDB()
+
+# Initialize spam detector and managers
+spam_detector = SpamDetector()
+init_spam_detector(spam_detector)
+init_notification_manager(notification_manager)
+init_experiment_manager(experiment_manager)
+
+# Set database for routers
+from routes.conversations_routes import set_db as conversations_set_db
+from routes.profile_routes import set_db as profile_set_db
+
+conversations_set_db(db)
+profile_set_db(db)
+
+# Include routers
+app.include_router(notifications_router)
+app.include_router(conversations_router)
+app.include_router(profile_router)
+app.include_router(experiments_router)
+app.include_router(websocket_router)
 
 
 # ==================== Initialization Endpoints ====================
@@ -449,7 +484,176 @@ async def get_system_stats():
     }
 
 
+# ==================== Trending & Search Endpoints ====================
+
+
+@app.get("/api/trending/topics")
+async def get_trending_topics(
+    hours: int = Query(24, ge=1, le=720),
+    limit: int = Query(10, ge=1, le=50)
+):
+    """
+    Get trending topics for the specified time window.
+
+    Args:
+        hours: Look-back window in hours (1-720, default 24)
+        limit: Max topics to return (1-50, default 10)
+
+    Returns:
+        List of trending topics sorted by engagement
+    """
+    from collections import Counter
+    from datetime import timedelta
+
+    tweets = db.get_all_tweets()
+    cutoff_time = datetime.utcnow() - timedelta(hours=hours)
+    recent_tweets = [t for t in tweets if t.created_at >= cutoff_time]
+
+    topic_data = {}
+    for tweet in recent_tweets:
+        for topic in tweet.topics:
+            if topic not in topic_data:
+                topic_data[topic] = {"count": 0, "engagement": 0}
+            topic_data[topic]["count"] += 1
+            topic_data[topic]["engagement"] += tweet.likes + tweet.retweets + tweet.replies
+
+    trending = [
+        {
+            "topic": topic,
+            "tweet_count": data["count"],
+            "engagement_score": data["engagement"],
+            "growth_rate": data["count"] / hours
+        }
+        for topic, data in topic_data.items()
+        if data["count"] >= 2
+    ]
+
+    trending.sort(key=lambda x: x["engagement_score"], reverse=True)
+    return trending[:limit]
+
+
+@app.get("/api/trending/discourse-metrics")
+async def get_discourse_metrics():
+    """
+    Get current discourse metrics (topics, engagement, diversity).
+
+    Returns:
+        Discourse metrics and patterns
+    """
+    from collections import Counter
+
+    tweets = db.get_all_tweets()
+
+    if not tweets:
+        return {
+            "total_tweets": 0,
+            "average_engagement": 0,
+            "top_topics": [],
+            "diversity_index": 0.0
+        }
+
+    topic_counts = Counter()
+    for tweet in tweets:
+        topic_counts.update(tweet.topics)
+
+    total_engagement = sum(t.likes + t.retweets + t.replies for t in tweets)
+    avg_engagement = total_engagement / len(tweets)
+
+    return {
+        "total_tweets": len(tweets),
+        "average_engagement": avg_engagement,
+        "top_topics": [t[0] for t in topic_counts.most_common(5)],
+        "topic_distribution": dict(topic_counts.most_common(10)),
+        "diversity_index": min(len(topic_counts) / 20, 1.0)
+    }
+
+
+@app.get("/api/search/tweets")
+async def search_tweets(
+    q: str = Query(..., min_length=1, max_length=100),
+    limit: int = Query(20, ge=1, le=100)
+):
+    """
+    Full-text search for tweets.
+
+    Args:
+        q: Search query
+        limit: Max results
+
+    Returns:
+        List of matching tweets
+    """
+    tweets = db.get_all_tweets()
+    q_lower = q.lower()
+
+    results = []
+    for tweet in tweets:
+        relevance = 0
+        if q_lower in tweet.content.lower():
+            relevance = 1.0
+        else:
+            # Check topics
+            for topic in tweet.topics:
+                if q_lower in topic.lower():
+                    relevance = max(relevance, 0.7)
+
+        if relevance > 0:
+            author = db.get_user(tweet.author_id)
+            results.append({
+                "tweet_id": tweet.tweet_id,
+                "content": tweet.content[:100],
+                "author": author.username if author else "Unknown",
+                "relevance": relevance,
+                "engagement": tweet.likes + tweet.retweets + tweet.replies
+            })
+
+    results.sort(key=lambda x: (x["relevance"], x["engagement"]), reverse=True)
+    return results[:limit]
+
+
+@app.get("/api/search/users")
+async def search_users(
+    q: str = Query(..., min_length=1, max_length=50),
+    limit: int = Query(10, ge=1, le=50)
+):
+    """
+    Search for users by username or interests.
+
+    Args:
+        q: Search query
+        limit: Max results
+
+    Returns:
+        List of matching users
+    """
+    users = db.get_all_users()
+    q_lower = q.lower()
+
+    results = []
+    for user in users:
+        relevance = 0
+        if q_lower in user.username.lower():
+            relevance = 1.0
+        else:
+            for interest in user.interests:
+                if q_lower in interest.lower():
+                    relevance = max(relevance, 0.7)
+
+        if relevance > 0:
+            results.append({
+                "user_id": user.user_id,
+                "username": user.username,
+                "persona": user.persona.value,
+                "interests": user.interests[:3],
+                "relevance": relevance
+            })
+
+    results.sort(key=lambda x: x["relevance"], reverse=True)
+    return results[:limit]
+
+
 # ==================== Health Check ====================
+
 
 
 @app.get("/health")
