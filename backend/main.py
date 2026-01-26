@@ -224,25 +224,31 @@ async def rank_tweets(request: RankingRequest):
     Returns:
         List of RankedTweet objects with explanations
     """
-    user = db.get_user(request.user_id)
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
+    try:
+        user = db.get_user(request.user_id)
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
 
-    # Stage 1: Candidate Generation
-    candidates = db.get_recent_tweets(limit=100)
+        # Stage 1: Candidate Generation
+        candidates = db.get_recent_tweets(limit=100)
 
-    engagement_graph = db.get_engagement_graph(request.user_id)
+        engagement_graph = db.get_engagement_graph(request.user_id)
 
-    # Stage 2: Scoring & Stage 3: Re-ranking
-    ranking_engine = RankingEngine(user)
-    ranked_tweets = ranking_engine.rank_tweets(
-        candidates=candidates,
-        engagement_graph=engagement_graph,
-        filter_params=request.filters,
-    )
+        # Stage 2: Scoring & Stage 3: Re-ranking
+        ranking_engine = RankingEngine(user)
+        ranked_tweets, exploration_explanations = ranking_engine.rank_tweets(
+            candidates=candidates,
+            engagement_graph=engagement_graph,
+            filter_params=request.filters,
+        )
 
-    # Return top-k results
-    return ranked_tweets[: request.limit]
+        # Return top-k results
+        return ranked_tweets[: request.limit]
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error in rank_tweets: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
 
 
 @app.post("/rank/explain/{tweet_id}")
