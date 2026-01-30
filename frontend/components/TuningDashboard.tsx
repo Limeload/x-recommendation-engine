@@ -89,11 +89,12 @@ export default function TuningDashboard({
   ];
 
   return (
-    <div className="border border-gray-200 rounded-lg bg-white p-5 shadow-sm">
-      <h2 className="text-lg font-semibold mb-4 flex items-center text-gray-900">
-        <Gear size={20} weight="bold" className="mr-2" />
-        Algorithm Settings
-      </h2>
+    <div className="border border-gray-200 rounded-lg bg-white shadow-sm flex flex-col max-h-[600px]">
+      <div className="p-5 overflow-y-auto flex-1">
+        <h2 className="text-lg font-semibold mb-4 flex items-center text-gray-900">
+          <Gear size={20} weight="bold" className="mr-2" />
+          Algorithm Settings
+        </h2>
 
       <div className="text-xs text-gray-600 mb-4 p-3 bg-blue-50 rounded border border-blue-200">
         <span className="font-semibold text-blue-900">{selectedUserId}</span>
@@ -152,7 +153,7 @@ export default function TuningDashboard({
           <p className="text-xs text-red-600">⚠️ Weights must sum to 1.0</p>
         )}
         {isValid && (
-          <p className="text-xs text-green-600">✅ Valid configuration</p>
+          <p className="text-xs text-green-600">Valid configuration</p>
         )}
       </div>
 
@@ -232,7 +233,7 @@ export default function TuningDashboard({
         <button
           onClick={handleSave}
           disabled={saving || !isValid}
-          className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-200 disabled:cursor-not-allowed text-white font-medium rounded transition text-sm"
+          className="flex-1 px-4 py-2 bg-gray-800 hover:bg-gray-900 disabled:bg-gray-200 disabled:cursor-not-allowed text-white font-medium rounded transition text-sm"
         >
           {saving ? 'Saving...' : 'Save Changes'}
         </button>
@@ -249,6 +250,7 @@ export default function TuningDashboard({
       <div className="mt-4 text-xs text-gray-600 p-3 bg-gray-50 rounded border border-gray-200 flex items-start gap-2">
         <LightbulbFilament size={16} weight="bold" className="flex-shrink-0 mt-0.5 text-gray-700" />
         <p>Adjust weights to personalize your feed. Changes save automatically.</p>
+      </div>
       </div>
     </div>
   );

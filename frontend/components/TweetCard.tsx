@@ -56,14 +56,8 @@ export default function TweetCard({ rankedTweet, rank, isNew = false }: TweetCar
         </div>
       )}
 
-      {/* Rank Badge + Author Info */}
+      {/* Author Info */}
       <div className="flex items-start space-x-3">
-        <div className="flex-shrink-0">
-          <div className="w-8 h-8 bg-gray-900 rounded-full flex items-center justify-center font-semibold text-xs text-white">
-            {rank}
-          </div>
-        </div>
-
         <div className="flex-1 min-w-0">
           {/* Author Header */}
           <div className="flex items-center space-x-2 flex-wrap">
