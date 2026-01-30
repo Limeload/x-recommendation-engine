@@ -82,23 +82,29 @@ install_deps() {
     print_info "Installing backend dependencies..."
     cd "$SCRIPT_DIR/backend"
 
-    # Remove and recreate venv if it exists to avoid architecture issues
-    if [ -d "venv" ]; then
-        rm -rf venv
-    fi
-
     # On macOS, force ARM64 architecture for consistency
     if [[ "$OSTYPE" == "darwin"* ]]; then
-        arch -arm64 python3.11 -m venv venv
+        # Always recreate venv on macOS to ensure proper architecture
+        if [ -d "venv" ]; then
+            rm -rf venv
+        fi
+        # Use Python 3.12 for better ARM64 support
+        /usr/local/bin/python3.12 -m venv venv
+        source venv/bin/activate
+        pip install --upgrade pip
+        pip install -r requirements.txt
+        deactivate
     else
+        if [ -d "venv" ]; then
+            rm -rf venv
+        fi
         python3 -m venv venv
+        source venv/bin/activate
+        pip install --upgrade pip
+        pip install -r requirements.txt
+        deactivate
     fi
     print_success "Virtual environment created"
-
-    source venv/bin/activate
-    pip install --upgrade pip -q
-    pip install -q -r requirements.txt
-    deactivate
     print_success "Backend dependencies installed"
 
     echo ""
@@ -106,9 +112,7 @@ install_deps() {
     cd "$SCRIPT_DIR/frontend"
 
     if [ ! -d "node_modules" ]; then
-        npm install --silent
-    else
-        npm ci --silent
+        npm install
     fi
 
     print_success "Frontend dependencies installed"
@@ -131,12 +135,8 @@ start_backend() {
     source venv/bin/activate
 
     export PYTHONUNBUFFERED=1
-    # Force ARM64 on macOS to avoid architecture mismatch with binaries
-    if [[ "$OSTYPE" == "darwin"* ]]; then
-        arch -arm64 python main.py &
-    else
-        python main.py &
-    fi
+    # Run python directly - the venv is already compiled for the correct architecture
+    python main.py &
     BACKEND_PID=$!
 
     sleep 2
