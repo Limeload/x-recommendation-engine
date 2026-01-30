@@ -13,14 +13,3 @@ services:
         value: false
       - key: PYTHONUNBUFFERED
         value: 1
-
-  - type: web
-    name: recommendation-engine-ui
-    env: node
-    plan: free
-    buildCommand: cd frontend && npm install && npm run build
-    startCommand: cd frontend && npm run start
-    rootDir: ./
-    envVars:
-      - key: NEXT_PUBLIC_API_URL
-        sync: false

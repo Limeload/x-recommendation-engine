@@ -41,31 +41,18 @@ curl https://recommendation-engine-api.onrender.com/health
 
 ---
 
-## Step 2: Deploy Frontend to Render
+## Step 2: Deploy Frontend to Vercel
 
-### Create Frontend Web Service
+For the Next.js frontend, use Vercel instead (much easier and faster):
 
-1. Go to [render.com/dashboard](https://render.com/dashboard)
-2. Click **"New +"** → **"Web Service"**
-3. Connect the same GitHub repository
-4. Configure:
-   - **Name**: `recommendation-engine-ui`
-   - **Region**: Same as backend
-   - **Branch**: `main`
-   - **Root Directory**: `frontend`
-   - **Runtime**: `Node`
-   - **Build Command**: `npm install && npm run build`
-   - **Start Command**: `npm run start`
+See [VERCEL_DEPLOYMENT.md](VERCEL_DEPLOYMENT.md) for complete frontend deployment guide.
 
-5. **Environment Variables**:
-   ```
-   NEXT_PUBLIC_API_URL=https://recommendation-engine-api.onrender.com
-   NODE_ENV=production
-   ```
-
-6. Click **"Create Web Service"** and wait for deployment
-
-7. Your frontend URL: `https://recommendation-engine-ui.onrender.com`
+**Quick summary**:
+1. Go to [vercel.com](https://vercel.com)
+2. Import your GitHub repo
+3. Set root directory to `frontend`
+4. Add env var: `NEXT_PUBLIC_API_URL=https://recommendation-engine-api.onrender.com`
+5. Deploy!
 
 ---
 
@@ -84,12 +71,14 @@ To verify:
 
 ### Backend not starting
 - Check **Logs** tab in Render dashboard
-- Verify Python dependencies: `pip install -r requirements.txt` works locally
-- Ensure `main.py` exists and FastAPI app is correctly initialized
+- Verify Pythoauto-deploy when you push to respective folders:
+- **Backend** (Render): Push to `backend/` → Auto-deployed
+- **Frontend** (Vercel): Push to `frontend/` → Auto-deployed
 
-### Frontend shows blank page
-- Check **Environment Variables** → `NEXT_PUBLIC_API_URL` is set correctly
-- Verify backend is running and accessible
+To verify:
+1. Make a code change in `backend/` or `frontend/`
+2. Push to GitHub
+3. Check Render/Verceld is running and accessible
 - Check browser console (F12) for errors
 
 ### CORS errors
@@ -124,9 +113,9 @@ app.add_middleware(
 - Set up a database (PostgreSQL add-on available on Render)
 - Configure custom domain
 - Set up error tracking (Sentry, etc.)
+Render Backend**: Free tier with 0.5 CPU, 512MB RAM (pro: $7/month for always-on)
+- **Vercel Frontend**: Free tier with generous limits (pro: $20/month if needed)
 
-## Cost
-- **Free tier**: 0.5 CPU, 512MB RAM per service
-- **Pro tier**: $7/month per service for always-on
+**Total**: Completely free for development/testing!
 
 Your current setup should run fine on free tier for development/testing.
