@@ -10,6 +10,7 @@ import FeedComponent from '@/components/Feed';
 import TuningDashboard from '@/components/TuningDashboard';
 import UserSelector from '@/components/UserSelector';
 import { RankedTweet, User } from '@/types';
+import { CheckCircle } from 'phosphor-react';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
@@ -20,6 +21,8 @@ export default function Home() {
   const [userWeights, setUserWeights] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(false);
   const [showTuning, setShowTuning] = useState(false);
+  const [settingsSaved, setSettingsSaved] = useState(false);
+  const [lastUpdateTime, setLastUpdateTime] = useState<string>('');
 
   // Fetch users on mount
   useEffect(() => {
@@ -58,6 +61,7 @@ export default function Home() {
 
       const data = await response.json();
       setRankedTweets(data);
+      setLastUpdateTime(new Date().toLocaleTimeString());
     } catch (error) {
       console.error('Ranking error:', error);
     } finally {
@@ -94,7 +98,13 @@ export default function Home() {
       if (!response.ok) throw new Error('Failed to update weights');
 
       setUserWeights(newWeights);
-      fetchRanking(); // Refresh feed with new weights
+      setSettingsSaved(true);
+
+      // Show saved indicator for 2 seconds
+      setTimeout(() => setSettingsSaved(false), 2000);
+
+      // Refresh feed with new weights
+      await fetchRanking();
     } catch (error) {
       console.error('Failed to update weights:', error);
     }
@@ -115,6 +125,21 @@ export default function Home() {
           </div>
 
           <div className="flex items-center space-x-3">
+            {/* Settings saved indicator */}
+            {settingsSaved && (
+              <div className="flex items-center space-x-2 px-3 py-2 bg-green-100 text-green-700 rounded-lg animate-in fade-in">
+                <CheckCircle size={16} weight="fill" />
+                <span className="text-xs font-semibold">Settings Applied</span>
+              </div>
+            )}
+
+            {/* Last update time */}
+            {lastUpdateTime && (
+              <div className="text-xs text-gray-500">
+                Updated: {lastUpdateTime}
+              </div>
+            )}
+
             <UserSelector
               users={users}
               selectedUserId={selectedUserId}
@@ -123,9 +148,13 @@ export default function Home() {
 
             <button
               onClick={() => setShowTuning(!showTuning)}
-              className="px-4 py-2 bg-gray-900 hover:bg-gray-800 rounded-lg font-medium transition text-white text-sm"
+              className={`px-4 py-2 rounded-lg font-medium transition text-white text-sm ${
+                showTuning
+                  ? 'bg-gray-800 hover:bg-gray-900'
+                  : 'bg-gray-900 hover:bg-gray-800'
+              }`}
             >
-              {showTuning ? 'Hide' : 'Settings'}
+              {showTuning ? 'Close' : 'Settings'}
             </button>
 
             <button

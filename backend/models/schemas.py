@@ -67,6 +67,7 @@ class Tweet(BaseModel):
     """Tweet document in the system"""
     tweet_id: str
     author_id: str
+    author_name: Optional[str] = None  # Human-readable author name
     content: str
     created_at: datetime
 

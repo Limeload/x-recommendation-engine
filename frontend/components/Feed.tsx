@@ -1,11 +1,11 @@
 /**
  * Tweet Feed Component
- * Displays ranked tweets with explanations
+ * Displays ranked tweets with explanations and real-time indicators
  */
 
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { RankedTweet } from '@/types';
 import TweetCard from './TweetCard';
 
@@ -20,6 +20,24 @@ export default function FeedComponent({
   loading,
   selectedUserId,
 }: FeedComponentProps) {
+  const [newTweetIds, setNewTweetIds] = useState<Set<string>>(new Set());
+
+  // Track which tweets are newly added
+  useEffect(() => {
+    const newIds = new Set<string>();
+    tweets.slice(0, 5).forEach(t => {
+      newIds.add(t.tweet.tweet_id);
+    });
+    setNewTweetIds(newIds);
+
+    // Remove highlighting after 3 seconds
+    const timeout = setTimeout(() => {
+      setNewTweetIds(new Set());
+    }, 3000);
+
+    return () => clearTimeout(timeout);
+  }, [tweets]);
+
   if (loading) {
     return (
       <div className="space-y-4">
@@ -47,7 +65,11 @@ export default function FeedComponent({
     <div className="border border-gray-200 rounded-lg overflow-hidden bg-white">
       {tweets.map((rankedTweet, index) => (
         <div key={rankedTweet.tweet.tweet_id} className="border-b border-gray-100 last:border-b-0">
-          <TweetCard rankedTweet={rankedTweet} rank={index + 1} />
+          <TweetCard
+            rankedTweet={rankedTweet}
+            rank={index + 1}
+            isNew={newTweetIds.has(rankedTweet.tweet.tweet_id)}
+          />
         </div>
       ))}
     </div>

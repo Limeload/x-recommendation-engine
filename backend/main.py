@@ -107,15 +107,18 @@ def _initialize_synthetic_data():
 
     # Generate 50 tweets from various users
     tweet_id_counter = 0
+    all_users = db.get_all_users()
     for i in range(50):
         user_idx = i % len(personas)
         user_id = f"user_{user_idx}"
         persona = personas[user_idx]
+        author_name = all_users[user_idx].username if user_idx < len(all_users) else f"user_{user_idx}"
 
         tweet = SyntheticDataGenerator.generate_tweet(
             tweet_id=f"tweet_{tweet_id_counter}",
             author_id=user_id,
             persona=persona,
+            author_name=author_name,
         )
         db.add_tweet(tweet)
         tweet_id_counter += 1

@@ -89,14 +89,15 @@ export default function TuningDashboard({
   ];
 
   return (
-    <div className="border border-gray-200 rounded-lg bg-white p-5">
+    <div className="border border-gray-200 rounded-lg bg-white p-5 shadow-sm">
       <h2 className="text-lg font-semibold mb-4 flex items-center text-gray-900">
         <Gear size={20} weight="bold" className="mr-2" />
-        Settings
+        Algorithm Settings
       </h2>
 
-      <div className="text-xs text-gray-600 mb-4 p-2 bg-gray-50 rounded border border-gray-200">
-        User: <span className="font-mono text-gray-900">{selectedUserId}</span>
+      <div className="text-xs text-gray-600 mb-4 p-3 bg-blue-50 rounded border border-blue-200">
+        <span className="font-semibold text-blue-900">{selectedUserId}</span>
+        <p className="mt-1 text-blue-800">Adjust these weights to personalize your feed. Changes apply in real-time.</p>
       </div>
 
       <div className="space-y-4">
@@ -107,7 +108,7 @@ export default function TuningDashboard({
                 <IconComponent size={16} weight="bold" className="mr-2" />
                 {label}
               </label>
-              <span className="text-sm font-mono font-semibold text-gray-900">
+              <span className="text-sm font-mono font-semibold text-gray-900 bg-gray-100 px-2 py-1 rounded">
                 {(tempWeights[key] || 0).toFixed(2)}
               </span>
             </div>
@@ -122,13 +123,13 @@ export default function TuningDashboard({
                 step="0.05"
                 value={tempWeights[key] || 0}
                 onChange={(e) => handleWeightChange(key, parseFloat(e.target.value))}
-                className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-gray-800"
+                className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
               />
               <button
                 onClick={() => handleWeightChange(key, 0)}
-                className="text-xs text-gray-600 hover:text-gray-900 px-2 py-1 hover:bg-gray-100 rounded"
+                className="text-xs text-gray-600 hover:text-gray-900 px-2 py-1 hover:bg-gray-100 rounded transition"
               >
-                0
+                Reset
               </button>
             </div>
           </div>
@@ -137,20 +138,21 @@ export default function TuningDashboard({
 
       {/* Weight Sum Indicator */}
       <div className="mt-4 p-3 bg-gray-50 rounded border border-gray-200">
-        <div className="flex items-center justify-between text-sm">
-          <span className="text-gray-700">Sum of Weights:</span>
+        <div className="flex items-center justify-between text-sm mb-2">
+          <span className="text-gray-700 font-semibold">Total Weight:</span>
           <span
-            className={`font-semibold ${
-              isValid ? 'text-gray-900' : 'text-red-600'
+            className={`font-bold text-lg ${
+              isValid ? 'text-green-600' : 'text-red-600'
             }`}
           >
             {total.toFixed(2)}
           </span>
         </div>
         {!isValid && (
-          <p className="text-xs text-red-600 mt-1">
-            Weights should sum to 1.0 (auto-normalized on save)
-          </p>
+          <p className="text-xs text-red-600">⚠️ Weights must sum to 1.0</p>
+        )}
+        {isValid && (
+          <p className="text-xs text-green-600">✅ Valid configuration</p>
         )}
       </div>
 
@@ -169,7 +171,7 @@ export default function TuningDashboard({
                 diversity: 0.1,
               })
             }
-            className="text-xs px-2 py-2 bg-gray-50 hover:bg-gray-100 rounded border border-gray-200 transition flex items-center justify-center gap-1 text-gray-900 font-medium"
+            className="text-xs px-2 py-2 bg-gray-100 hover:bg-gray-200 rounded border border-gray-300 transition flex items-center justify-center gap-1 text-gray-900 font-medium"
           >
             <Newspaper size={14} weight="bold" />
             Latest
@@ -185,7 +187,7 @@ export default function TuningDashboard({
                 diversity: 0.1,
               })
             }
-            className="text-xs px-2 py-2 bg-gray-50 hover:bg-gray-100 rounded border border-gray-200 transition flex items-center justify-center gap-1 text-gray-900 font-medium"
+            className="text-xs px-2 py-2 bg-gray-100 hover:bg-gray-200 rounded border border-gray-300 transition flex items-center justify-center gap-1 text-gray-900 font-medium"
           >
             <Fire size={14} weight="bold" />
             Trending
@@ -201,7 +203,7 @@ export default function TuningDashboard({
                 diversity: 0.1,
               })
             }
-            className="text-xs px-2 py-2 bg-gray-50 hover:bg-gray-100 rounded border border-gray-200 transition flex items-center justify-center gap-1 text-gray-900 font-medium"
+            className="text-xs px-2 py-2 bg-gray-100 hover:bg-gray-200 rounded border border-gray-300 transition flex items-center justify-center gap-1 text-gray-900 font-medium"
           >
             <Target size={14} weight="bold" />
             Personal
@@ -217,7 +219,7 @@ export default function TuningDashboard({
                 diversity: 0.2,
               })
             }
-            className="text-xs px-2 py-2 bg-gray-50 hover:bg-gray-100 rounded border border-gray-200 transition flex items-center justify-center gap-1 text-gray-900 font-medium"
+            className="text-xs px-2 py-2 bg-gray-100 hover:bg-gray-200 rounded border border-gray-300 transition flex items-center justify-center gap-1 text-gray-900 font-medium"
           >
             <Scales size={14} weight="bold" />
             Balanced
@@ -230,9 +232,9 @@ export default function TuningDashboard({
         <button
           onClick={handleSave}
           disabled={saving || !isValid}
-          className="flex-1 px-4 py-2 bg-gray-900 hover:bg-gray-800 disabled:bg-gray-200 disabled:cursor-not-allowed text-white font-medium rounded transition text-sm"
+          className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-200 disabled:cursor-not-allowed text-white font-medium rounded transition text-sm"
         >
-          {saving ? 'Saving...' : 'Save'}
+          {saving ? 'Saving...' : 'Save Changes'}
         </button>
 
         <button

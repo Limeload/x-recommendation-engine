@@ -17,6 +17,7 @@ export interface User {
 export interface Tweet {
   tweet_id: string;
   author_id: string;
+  author_name?: string;  // Human-readable author name
   content: string;
   created_at: string;
   likes: number;
