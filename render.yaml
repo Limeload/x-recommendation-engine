@@ -1,15 +1,15 @@
 services:
   - type: web
     name: recommendation-engine-api
-    env: python
+    runtime: python
     plan: free
     buildCommand: pip install -r requirements.txt
     startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
     rootDir: backend
     envVars:
       - key: DEBUG
-        value: false
+        value: "false"
       - key: USE_VECTOR_DB
-        value: false
+        value: "false"
       - key: PYTHONUNBUFFERED
-        value: 1
+        value: "1"
