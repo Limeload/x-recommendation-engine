@@ -47,6 +47,9 @@ export default function Home() {
 
   const fetchRanking = async (limit: number = 20) => {
     setLoading(true);
+    const startTime = Date.now();
+    const minimumLoadingTime = 1500; // 1.5 second minimum loading time
+
     try {
       const response = await fetch(`${API_BASE_URL}/rank`, {
         method: 'POST',
@@ -60,6 +63,15 @@ export default function Home() {
       if (!response.ok) throw new Error('Failed to fetch ranking');
 
       const data = await response.json();
+
+      // Ensure minimum loading time for better UX
+      const elapsedTime = Date.now() - startTime;
+      const remainingTime = Math.max(0, minimumLoadingTime - elapsedTime);
+
+      if (remainingTime > 0) {
+        await new Promise(resolve => setTimeout(resolve, remainingTime));
+      }
+
       setRankedTweets(data);
       setLastUpdateTime(new Date().toLocaleTimeString());
     } catch (error) {
