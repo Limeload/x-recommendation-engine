@@ -10,6 +10,8 @@ aiofiles==23.2.1
 numpy>=1.24.0
 scipy>=1.10.0
 
+# LLM integration (optional — set ANTHROPIC_API_KEY to enable live tweet generation)
+anthropic>=0.30.0
 
 # Development dependencies
 pytest==7.4.3

@@ -13,63 +13,56 @@ from models.ranking_engine import RankingEngine
 class SyntheticDataGenerator:
     """Generate synthetic users, tweets, and engagement patterns"""
 
+    # Topic category mappings for affinity scoring
+    TECH_TOPICS = {
+        "AI", "LLMs", "Technology", "OpenSource", "CloudComputing", "DataScience",
+        "MachineLearning", "BackendDevelopment", "DevOps", "Systems", "Robotics",
+        "Quantum", "Web3", "Blockchain", "Crypto",
+    }
+    POLITICS_TOPICS = {
+        "Politics", "Policy", "Governance", "Elections", "Government",
+        "Legislation", "Democracy", "Regulation", "Diplomacy",
+    }
+    CULTURE_TOPICS = {
+        "Culture", "Art", "Music", "Film", "Entertainment", "Sports", "Fashion",
+        "Food", "Travel", "Humor", "Memes", "PopCulture", "SocialMedia",
+        "Creativity", "Design", "Community", "Marketing",
+    }
+
     # Persona-specific interest templates
     PERSONA_INTERESTS = {
         UserPersona.FOUNDER: [
-            "Startups",
-            "AI",
-            "ProductManagement",
-            "Fundraising",
-            "Technology",
-            "Innovation",
+            "Startups", "AI", "ProductManagement", "Fundraising", "Technology", "Innovation",
         ],
         UserPersona.JOURNALIST: [
-            "Technology",
-            "AI",
-            "Business",
-            "Investigation",
-            "Media",
-            "Politics",
+            "Technology", "AI", "Business", "Investigation", "Media", "Politics",
         ],
         UserPersona.ENGINEER: [
-            "AI",
-            "BackendDevelopment",
-            "OpenSource",
-            "DevOps",
-            "MachineL",
-            "Systems",
+            "AI", "BackendDevelopment", "OpenSource", "DevOps", "MachineLearning", "Systems",
         ],
         UserPersona.INVESTOR: [
-            "Startups",
-            "Fintech",
-            "AI",
-            "Crypto",
-            "Markets",
-            "Investment",
+            "Startups", "Fintech", "AI", "Crypto", "Markets", "Investment",
         ],
         UserPersona.CONTENT_CREATOR: [
-            "Technology",
-            "SocialMedia",
-            "Design",
-            "Creativity",
-            "Community",
-            "Marketing",
+            "Technology", "SocialMedia", "Design", "Creativity", "Community", "Marketing",
         ],
         UserPersona.RESEARCHER: [
-            "AI",
-            "MachineLearning",
-            "DataScience",
-            "Academia",
-            "Papers",
-            "Theory",
+            "AI", "MachineLearning", "DataScience", "Academia", "Papers", "Theory",
         ],
         UserPersona.ANALYST: [
-            "Technology",
-            "Business",
-            "Analytics",
-            "Markets",
-            "Data",
-            "Trends",
+            "Technology", "Business", "Analytics", "Markets", "Data", "Trends",
+        ],
+        UserPersona.POLITICIAN: [
+            "Politics", "Policy", "Governance", "Elections", "Government",
+            "Legislation", "Democracy",
+        ],
+        UserPersona.MEME_ACCOUNT: [
+            "Memes", "Humor", "PopCulture", "Entertainment", "SocialMedia",
+            "Culture", "Creativity",
+        ],
+        UserPersona.TRADER: [
+            "Crypto", "Markets", "Finance", "Stocks", "Trading",
+            "Economics", "Investment",
         ],
     }
 
@@ -81,24 +74,16 @@ class SyntheticDataGenerator:
         UserPersona.CONTENT_CREATOR: ["ContentStrategy", "VideoProduction", "Engagement"],
         UserPersona.RESEARCHER: ["ResearchMethodology", "StatisticalAnalysis", "PeerReview"],
         UserPersona.ANALYST: ["DataAnalysis", "MarketResearch", "Forecasting"],
+        UserPersona.POLITICIAN: ["PublicPolicy", "CampaignStrategy", "Legislation"],
+        UserPersona.MEME_ACCOUNT: ["ViralContent", "ComedicTiming", "TrendSpotting"],
+        UserPersona.TRADER: ["TechnicalAnalysis", "RiskManagement", "MarketMicrostructure"],
     }
 
     TOPICS_POOL = [
-        "AI",
-        "LLMs",
-        "Startups",
-        "Crypto",
-        "Finance",
-        "Technology",
-        "Design",
-        "DataScience",
-        "OpenSource",
-        "Web3",
-        "CloudComputing",
-        "Blockchain",
-        "Robotics",
-        "Quantum",
-        "Biology",
+        "AI", "LLMs", "Startups", "Crypto", "Finance", "Technology", "Design",
+        "DataScience", "OpenSource", "Web3", "CloudComputing", "Blockchain",
+        "Robotics", "Quantum", "Biology", "Politics", "Policy", "Markets",
+        "Memes", "Culture", "Entertainment", "Trading", "Economics",
     ]
 
     TWEET_TEMPLATES = {
@@ -165,6 +150,46 @@ class SyntheticDataGenerator:
             "Funding landscape analysis: {topics} sector raised $3.2B in 2025, down from $4.1B in 2024.\n\nBut valuations held steady. Investors are being selective about quality.",
             "{topics} trend report: Moving from 'What is this?' to 'How do I use this?'\n\nContent strategy should reflect this maturity. Explainers are out, implementations are in.",
         ],
+        UserPersona.POLITICIAN: [
+            "Our {topics} bill passed committee 7-4. This is what governing looks like when you prioritize people over special interests.\n\nFull text linked below. Read it. Share it. This matters.",
+            "Constituent meeting in {topics} district today: 200 people showed up. They're not angry. They're organized.\n\nElected officials who ignore this are going to have a very difficult next cycle.",
+            "I've introduced legislation addressing {topics}. Three principles: transparency, accountability, community benefit.\n\nCo-sponsored by 14 colleagues. This is how you build coalitions.",
+            "My opponents want to make {topics} partisan. It isn't. 73% of Americans in the last poll support common-sense reform.\n\nThis is about serving constituents, not political points.",
+            "Floor statement on {topics} today. Short version: the status quo is failing working families.\n\nLong version: linked in thread. This is what I was elected to change.",
+            "Town hall on {topics} last night. Took every question. The hardest ones were the best ones.\n\nPublic service means being accountable. That's not optional.",
+            "Visiting {topics} sector workers this week. Their stories should be what drives policy.\n\nI'm listening. I'm taking notes. And I'm bringing this back to the floor next session.",
+        ],
+        UserPersona.MEME_ACCOUNT: [
+            "POV: You just discovered {topics} for the first time\n\n*visible confusion followed by immediate obsession*\n\nWe've all been there. Drop a 🤝 if this is you",
+            "{topics} girlies are a different breed fr. No sleep, all discourse, maximum opinions.\n\nAnd honestly? Based.",
+            "Nobody:\nAbsolutely nobody:\n{topics} at 3am: let me just explain one more thing actually",
+            "The {topics} to normal person pipeline:\n\n1. 'What even is this'\n2. 'okay this is interesting'\n3. 'I need everyone to know about this'\n4. 'I am now the {topics} person in every conversation'",
+            "If {topics} had a dating app profile it would say:\n\n'Passionate. Slightly chaotic. Will consume 40 hours of your week. Non-refundable.'",
+            "{topics} community arguing about the same thing for the 47th time this month 🍿\n\nIt's not drama. It's a feature. We're built different.",
+            "New {topics} update just dropped and I haven't slept in 72 hours.\n\nAre we okay? We're not okay. But we're engaged.",
+        ],
+        UserPersona.TRADER: [
+            "{topics} chart setting up for something. Volume divergence + support holding. Not financial advice but I'm watching closely.\n\nEntry invalidated below last week's low.",
+            "Current {topics} position: long since the structural break at resistance-turned-support.\n\nR:R was 1:4 at entry. Trailing stop now at breakeven. Let it run.",
+            "Everyone laughed at my {topics} thesis 6 weeks ago.\n\nSilent now. Still not gloating. Just sizing into the next setup.",
+            "{topics} sentiment flip happening in real time. Retail capitulating while smart money quietly accumulates.\n\nThis divergence doesn't last. Be on the right side.",
+            "Risk management is the only edge that compounds. \n\n{topics} volatility means position sizing matters more than entry.\n\nLose small. Win big. Repeat.",
+            "Macro read on {topics}: Dollar strength capping upside for now. Wait for the monthly close before adding.\n\nPatience is a position.",
+            "{topics} weekly close was significant. Market structure shifted. Either confirmation of new trend or the cleanest bear trap I've seen this year.\n\nMy bias: former.",
+        ],
+    }
+
+    PERSONA_BIOS = {
+        UserPersona.FOUNDER: "Building the future, one product at a time. Obsessed with users.",
+        UserPersona.JOURNALIST: "Covering tech & power. DMs open for tips. Opinions my own.",
+        UserPersona.ENGINEER: "Ship it. Break it. Fix it. Open source everything.",
+        UserPersona.INVESTOR: "Backing outlier founders early. Partner @VentureX. Views personal.",
+        UserPersona.CONTENT_CREATOR: "Making the complex simple. 500k+ learning with me.",
+        UserPersona.RESEARCHER: "Studying AI safety & alignment. Publish or perish. Usually perish.",
+        UserPersona.ANALYST: "Data over vibes. Market structure nerd. Probably wrong but precisely so.",
+        UserPersona.POLITICIAN: "Serving the people of District 7. Constituent-first, always.",
+        UserPersona.MEME_ACCOUNT: "For content. Not serious. Sometimes serious. Cannot confirm.",
+        UserPersona.TRADER: "Price action > narrative. Manage risk, let profits run. Not financial advice.",
     }
 
     @staticmethod
@@ -172,16 +197,18 @@ class SyntheticDataGenerator:
         user_id: str, username: str, persona: UserPersona
     ) -> User:
         """Generate a synthetic user with persona-specific interests"""
+        interests_pool = SyntheticDataGenerator.PERSONA_INTERESTS[persona]
+        k = min(4, len(interests_pool))
         return User(
             user_id=user_id,
             username=username,
             persona=persona,
-            interests=random.sample(
-                SyntheticDataGenerator.PERSONA_INTERESTS[persona], k=4
-            ),
+            interests=random.sample(interests_pool, k=k),
             expertise_areas=SyntheticDataGenerator.PERSONA_EXPERTISE[persona],
             follower_count=random.randint(100, 50000),
-            bio=f"{persona.value.title()} passionate about technology and innovation",
+            bio=SyntheticDataGenerator.PERSONA_BIOS.get(
+                persona, f"{persona.value.title()} passionate about technology and innovation"
+            ),
         )
 
     @staticmethod

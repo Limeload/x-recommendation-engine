@@ -20,6 +20,23 @@ from .exploration_ranker import (
 )
 
 
+# Topic categories for affinity-based scoring
+_TECH_TOPICS = {
+    "AI", "LLMs", "Technology", "OpenSource", "CloudComputing", "DataScience",
+    "MachineLearning", "BackendDevelopment", "DevOps", "Systems", "Robotics",
+    "Quantum", "Web3", "Blockchain", "Crypto",
+}
+_POLITICS_TOPICS = {
+    "Politics", "Policy", "Governance", "Elections", "Government",
+    "Legislation", "Democracy", "Regulation", "Diplomacy",
+}
+_CULTURE_TOPICS = {
+    "Culture", "Art", "Music", "Film", "Entertainment", "Sports", "Fashion",
+    "Food", "Travel", "Humor", "Memes", "PopCulture", "SocialMedia",
+    "Creativity", "Design", "Community", "Marketing",
+}
+
+
 class RankingEngine:
     """
     Multi-stage ranking engine with tunable weights and exploration-exploitation.
@@ -62,14 +79,12 @@ class RankingEngine:
         )
 
     def _validate_weights(self) -> None:
-        """Ensure weights sum to approximately 1.0"""
-        total = sum(
-            self.weights.get(k, 0)
-            for k in ["recency", "popularity", "quality", "topic_relevance"]
-        )
-        if abs(total - 1.0) > 0.01:
-            # Normalize weights
-            for key in ["recency", "popularity", "quality", "topic_relevance"]:
+        """Normalize only the 5 core ranking weights to sum to 1.0.
+        Preference modifiers (in_network_boost, virality_boost, *_affinity) are independent."""
+        core_keys = ["recency", "popularity", "quality", "topic_relevance", "diversity"]
+        total = sum(self.weights.get(k, 0) for k in core_keys)
+        if total > 0 and abs(total - 1.0) > 0.01:
+            for key in core_keys:
                 if key in self.weights:
                     self.weights[key] = self.weights[key] / total
 
@@ -217,14 +232,31 @@ class RankingEngine:
         # 5. Diversity Penalty
         diversity_penalty = self._calculate_diversity_penalty(tweet, engagement_graph)
 
-        # Weighted combination
+        # Virality score: retweet velocity (retweets per hour since creation)
+        virality_score = self._calculate_virality_score(tweet)
+
+        # Base weighted combination of core factors
+        virality_boost = self.weights.get("virality_boost", 0.5)
+        # Blend topic_relevance (niche) with virality based on virality_boost preference
+        niche_component = (1 - virality_boost) * topic_relevance_score
+        viral_component = virality_boost * virality_score
+
         total_score = (
             self.weights.get("recency", 0.2) * recency_score
             + self.weights.get("popularity", 0.25) * popularity_score
             + self.weights.get("quality", 0.2) * quality_score
-            + self.weights.get("topic_relevance", 0.25) * topic_relevance_score
+            + self.weights.get("topic_relevance", 0.25) * (niche_component + viral_component)
             - self.weights.get("diversity", 0.1) * diversity_penalty
         )
+
+        # Apply in-network boost for followed accounts
+        if engagement_graph and tweet.author_id in engagement_graph.following:
+            in_network_boost = self.weights.get("in_network_boost", 0.3)
+            total_score *= (1.0 + in_network_boost * 0.5)
+
+        # Apply topic category affinity multiplier
+        affinity_multiplier = self._calculate_topic_affinity_multiplier(tweet)
+        total_score *= affinity_multiplier
 
         # Clamp to [0, 1]
         total_score = max(0.0, min(1.0, total_score))
@@ -346,23 +378,50 @@ class RankingEngine:
     def _calculate_diversity_penalty(
         self, tweet: Tweet, engagement_graph: EngagementGraph
     ) -> float:
-        """
-        Calculate penalty to avoid cluster/redundancy.
-        Penalizes tweets from same author or about same topic.
+        """Penalty to avoid cluster/redundancy."""
+        if engagement_graph and tweet.author_id in engagement_graph.following:
+            return 0.0
+        return 0.05
 
-        Args:
-            tweet: Tweet to score
-            engagement_graph: User's engagement context
+    def _calculate_virality_score(self, tweet: Tweet) -> float:
+        """
+        Score based on engagement velocity (retweets per hour).
+        High virality = content gaining traction quickly regardless of absolute size.
 
         Returns:
-            Penalty from 0-1
+            Score from 0-1
         """
-        # Simple implementation: penalize if author is not followed
-        if engagement_graph and tweet.author_id in engagement_graph.following:
-            return 0.0  # No penalty for followed users
+        now = datetime.utcnow()
+        age_hours = max(0.5, (now - tweet.created_at).total_seconds() / 3600)
+        retweet_velocity = tweet.retweets / age_hours
+        # Normalize: 50 retweets/hour = score of 1.0
+        return min(1.0, retweet_velocity / 50.0)
 
-        # Penalize unknown authors slightly
-        return 0.05
+    def _calculate_topic_affinity_multiplier(self, tweet: Tweet) -> float:
+        """
+        Multiplier based on user's topic category preferences.
+        tech_affinity / politics_affinity / culture_affinity each go 0→1.
+        A value of 0.5 = neutral (multiplier 1.0), 1.0 = strong boost, 0.0 = suppressed.
+
+        Returns:
+            Multiplier in [0.3, 1.5]
+        """
+        tech_affinity = self.weights.get("tech_affinity", 0.5)
+        politics_affinity = self.weights.get("politics_affinity", 0.3)
+        culture_affinity = self.weights.get("culture_affinity", 0.5)
+
+        tweet_topics = set(tweet.topics)
+        multiplier = 1.0
+
+        if tweet_topics & _TECH_TOPICS:
+            # affinity 0→0.5 (suppress), 0.5→1.0 (neutral→boost)
+            multiplier *= 0.5 + tech_affinity
+        if tweet_topics & _POLITICS_TOPICS:
+            multiplier *= 0.5 + politics_affinity
+        if tweet_topics & _CULTURE_TOPICS:
+            multiplier *= 0.5 + culture_affinity
+
+        return max(0.3, min(1.5, multiplier))
 
     def _apply_diversity_filter(
         self, scored_tweets: List[Tuple[Tweet, RankingExplanation]]
@@ -458,7 +517,28 @@ class RankingEngine:
 
         # Author context
         if engagement_graph and tweet.author_id in engagement_graph.following:
-            factors.append("From an account you follow")
+            in_network_boost = self.weights.get("in_network_boost", 0.3)
+            if in_network_boost > 0.5:
+                factors.append("Strong in-network boost — account you follow")
+            else:
+                factors.append("From an account you follow")
+
+        # Virality context
+        virality_score = self._calculate_virality_score(tweet)
+        virality_boost = self.weights.get("virality_boost", 0.5)
+        if virality_score > 0.6 and virality_boost > 0.6:
+            factors.append("Trending — high engagement velocity")
+        elif virality_score < 0.2 and virality_boost < 0.3:
+            factors.append("Niche/specialized — low virality preferred")
+
+        # Topic affinity context
+        tweet_topics_set = set(tweet.topics)
+        if tweet_topics_set & _TECH_TOPICS and self.weights.get("tech_affinity", 0.5) > 0.7:
+            factors.append("Matches your tech interest preference")
+        if tweet_topics_set & _POLITICS_TOPICS and self.weights.get("politics_affinity", 0.3) > 0.6:
+            factors.append("Matches your politics interest preference")
+        if tweet_topics_set & _CULTURE_TOPICS and self.weights.get("culture_affinity", 0.5) > 0.7:
+            factors.append("Matches your culture interest preference")
 
         # Engagement context
         if tweet.in_reply_to_user_id == self.user.user_id:

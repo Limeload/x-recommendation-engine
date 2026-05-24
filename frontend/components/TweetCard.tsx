@@ -6,6 +6,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import Link from 'next/link';
 import { ChatCircle, Repeat, Heart, BookmarkSimple } from 'phosphor-react';
 import { RankedTweet } from '@/types';
 import ExplanationPanel from './ExplanationPanel';
@@ -61,7 +62,13 @@ export default function TweetCard({ rankedTweet, rank, isNew = false }: TweetCar
         <div className="flex-1 min-w-0">
           {/* Author Header */}
           <div className="flex items-center space-x-2 flex-wrap">
-            <span className="font-semibold text-sm text-gray-900">{authorName}</span>
+            <Link
+              href={`/profile/${tweet.author_id}`}
+              className="font-semibold text-sm text-gray-900 hover:underline"
+              onClick={e => e.stopPropagation()}
+            >
+              {authorName}
+            </Link>
             <span className="text-gray-400">·</span>
             <span className={`text-xs font-medium ${
               isJustNow ? 'text-blue-600 font-semibold' : 'text-gray-500'

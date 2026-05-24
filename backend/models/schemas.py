@@ -18,6 +18,9 @@ class UserPersona(str, Enum):
     CONTENT_CREATOR = "content_creator"
     RESEARCHER = "researcher"
     ANALYST = "analyst"
+    POLITICIAN = "politician"
+    MEME_ACCOUNT = "meme_account"
+    TRADER = "trader"
 
 
 class User(BaseModel):
@@ -34,11 +37,19 @@ class User(BaseModel):
     # Personalization profile
     preference_weights: Dict[str, float] = Field(
         default_factory=lambda: {
+            # Core ranking weights (must sum to ~1.0)
             "recency": 0.2,
             "popularity": 0.25,
             "quality": 0.2,
             "topic_relevance": 0.25,
-            "diversity": 0.1
+            "diversity": 0.1,
+            # Feed preference modifiers (independent 0-1 sliders)
+            "in_network_boost": 0.3,   # 0=global feed, 1=friends first
+            "virality_boost": 0.5,      # 0=niche/specialized, 1=viral/trending
+            # Topic category affinities (0-1 each)
+            "tech_affinity": 0.7,
+            "politics_affinity": 0.3,
+            "culture_affinity": 0.5,
         }
     )
 

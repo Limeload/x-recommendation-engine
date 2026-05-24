@@ -7,7 +7,10 @@ from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from typing import List, Optional, Dict, Any
 from pydantic import BaseModel
+from datetime import datetime, timedelta
 import logging
+import asyncio
+import random as _random
 
 from models.schemas import (
     User,
@@ -16,6 +19,7 @@ from models.schemas import (
     RankedTweet,
     WeightTuningRequest,
     UserPersona,
+    EngagementEvent,
 )
 from models.ranking_engine import RankingEngine
 from models.spam_detector import SpamDetector, init_spam_detector
@@ -83,65 +87,135 @@ app.include_router(websocket_router)
 # ==================== Initialization Endpoints ====================
 
 
+async def _simulation_tick() -> None:
+    """One tick: a few agents engage with recent tweets autonomously."""
+    all_users = db.get_all_users()
+    tweets = db.get_recent_tweets(limit=30)
+    if not tweets or not all_users:
+        return
+
+    agents = _random.sample(all_users, min(4, len(all_users)))
+    event_types = ["like", "retweet", "reply", "bookmark"]
+    weights = [0.6, 0.2, 0.1, 0.1]
+
+    for user in agents:
+        user_interests = set(user.interests)
+        candidates = _random.sample(tweets, min(4, len(tweets)))
+        for tweet in candidates:
+            if tweet.author_id == user.user_id:
+                continue
+            overlap = len(user_interests & set(tweet.topics))
+            engage_prob = 0.4 + 0.2 * overlap
+            if _random.random() < engage_prob:
+                event_type = _random.choices(event_types, weights=weights)[0]
+                event = EngagementEvent(
+                    event_id=f"sim_{datetime.utcnow().timestamp()}_{user.user_id}_{tweet.tweet_id}",
+                    user_id=user.user_id,
+                    target_tweet_id=tweet.tweet_id,
+                    target_user_id=tweet.author_id,
+                    event_type=event_type,
+                    created_at=datetime.utcnow(),
+                    weight=1.0,
+                )
+                db.add_engagement_event(user.user_id, event)
+
+
+async def _background_simulation():
+    """Continuously run agent simulation ticks every 30 seconds."""
+    await asyncio.sleep(5)  # brief delay after startup
+    while True:
+        try:
+            await _simulation_tick()
+        except Exception as exc:
+            logger.error(f"Simulation tick error: {exc}")
+        await asyncio.sleep(30)
+
+
+async def _llm_generation_task() -> None:
+    """Optionally generate LLM tweets in the background after startup."""
+    import os
+    if not os.getenv("ANTHROPIC_API_KEY"):
+        logger.info("No ANTHROPIC_API_KEY — skipping LLM tweet generation.")
+        return
+    await asyncio.sleep(3)  # let startup settle
+    try:
+        from simulation.llm_tweet_generator import generate_llm_tweets_for_users
+        users = db.get_all_users()
+        n = await generate_llm_tweets_for_users(users, db, count_per_user=2)
+        logger.info(f"LLM tweet generation complete: {n} tweets added.")
+    except Exception as exc:
+        logger.error(f"LLM generation task failed: {exc}")
+
+
 @app.on_event("startup")
 async def startup_event():
-    """Initialize synthetic data on startup"""
+    """Initialize synthetic data and launch background tasks."""
     logger.info("Initializing synthetic data...")
     _initialize_synthetic_data()
-    logger.info("Startup complete. Synthetic data loaded.")
+    asyncio.create_task(_background_simulation())
+    asyncio.create_task(_llm_generation_task())
+    logger.info("Startup complete. Background tasks running.")
 
 
 def _initialize_synthetic_data():
     """Generate synthetic users, tweets, and engagement patterns"""
     personas = list(UserPersona)
 
-    # Generate 10 synthetic users
-    for i, persona in enumerate(personas):
-        user = SyntheticDataGenerator.generate_user(
-            user_id=f"user_{i}",
-            username=f"{persona.value}_user_{i}",
-            persona=persona,
-        )
-        db.add_user(user)
-        logger.info(f"Created user: {user.username}")
+    # Generate 2 users per persona (20 total) for richer social network
+    user_counter = 0
+    for persona in personas:
+        for instance in range(2):
+            username_suffixes = {
+                UserPersona.POLITICIAN: ["Rep", "Sen"],
+                UserPersona.MEME_ACCOUNT: ["dank", "based"],
+                UserPersona.TRADER: ["alpha", "defi"],
+            }
+            suffixes = username_suffixes.get(persona, ["pro", "x"])
+            suffix = suffixes[instance % len(suffixes)]
+            user = SyntheticDataGenerator.generate_user(
+                user_id=f"user_{user_counter}",
+                username=f"{persona.value}_{suffix}",
+                persona=persona,
+            )
+            db.add_user(user)
+            user_counter += 1
 
-    # Generate 50 tweets from various users
+    logger.info(f"Created {user_counter} users across {len(personas)} personas")
+
+    # Generate 5-7 tweets per user (100-140 total)
     tweet_id_counter = 0
     all_users = db.get_all_users()
-    for i in range(50):
-        user_idx = i % len(personas)
-        user_id = f"user_{user_idx}"
-        persona = personas[user_idx]
-        author_name = all_users[user_idx].username if user_idx < len(all_users) else f"user_{user_idx}"
+    for user in all_users:
+        tweet_count = _random.randint(5, 7)
+        for _ in range(tweet_count):
+            tweet = SyntheticDataGenerator.generate_tweet(
+                tweet_id=f"tweet_{tweet_id_counter}",
+                author_id=user.user_id,
+                persona=user.persona,
+                author_name=user.username,
+            )
+            db.add_tweet(tweet)
+            tweet_id_counter += 1
 
-        tweet = SyntheticDataGenerator.generate_tweet(
-            tweet_id=f"tweet_{tweet_id_counter}",
-            author_id=user_id,
-            persona=persona,
-            author_name=author_name,
-        )
-        db.add_tweet(tweet)
-        tweet_id_counter += 1
+    logger.info(f"Created {tweet_id_counter} tweets")
 
-    # Create some follow relationships
-    for i in range(len(personas)):
-        # Each user follows 3-5 other random users
-        follow_count = min(3, len(personas) - 1)
-        follow_targets = [j for j in range(len(personas)) if j != i]
-        for target in random.sample(follow_targets, k=follow_count):
-            db.add_following(f"user_{i}", f"user_{target}")
+    # Create follow relationships: each user follows 4-6 others,
+    # with preference for users from adjacent persona types
+    all_user_ids = [u.user_id for u in all_users]
+    for user in all_users:
+        follow_count = _random.randint(4, 6)
+        candidates = [uid for uid in all_user_ids if uid != user.user_id]
+        for target_id in _random.sample(candidates, k=min(follow_count, len(candidates))):
+            db.add_following(user.user_id, target_id)
 
-    # Generate engagement events
+    # Seed engagement events
     event_id_counter = 0
-    users = db.get_all_users()
     tweets = db.get_all_tweets()
-
-    for user in users:
-        # Each user engages with 10-20 random tweets
-        engagement_count = min(15, len(tweets))
-        for _ in range(engagement_count):
-            target_tweet = random.choice(tweets)
-            if target_tweet.author_id != user.user_id:  # Don't engage with own tweets
+    for user in all_users:
+        engagement_count = min(20, len(tweets))
+        sample_tweets = _random.sample(tweets, k=engagement_count)
+        for target_tweet in sample_tweets:
+            if target_tweet.author_id != user.user_id:
                 event = SyntheticDataGenerator.generate_engagement_event(
                     event_id=f"event_{event_id_counter}",
                     user_id=user.user_id,
@@ -151,12 +225,7 @@ def _initialize_synthetic_data():
                 db.add_engagement_event(user.user_id, event)
                 event_id_counter += 1
 
-    logger.info(f"Created {len(db.get_all_users())} users")
-    logger.info(f"Created {len(db.get_all_tweets())} tweets")
     logger.info(f"Created {event_id_counter} engagement events")
-
-
-import random
 
 
 # ==================== User Endpoints ====================
@@ -512,7 +581,6 @@ async def get_trending_topics(
         List of trending topics sorted by engagement
     """
     from collections import Counter
-    from datetime import timedelta
 
     tweets = db.get_all_tweets()
     cutoff_time = datetime.utcnow() - timedelta(hours=hours)
@@ -659,6 +727,33 @@ async def search_users(
 
     results.sort(key=lambda x: x["relevance"], reverse=True)
     return results[:limit]
+
+
+# ==================== Notifications HTTP fallback ====================
+
+
+@app.get("/api/notifications")
+async def get_notifications(
+    user_id: str = Query("user_0"),
+    limit: int = Query(20, le=50),
+):
+    """
+    Bootstrap notifications from engagement events.
+    Used by the notifications page before WebSocket connects.
+    """
+    graph = db.get_engagement_graph(user_id)
+    events = sorted(graph.engagement_events, key=lambda e: e.created_at, reverse=True)
+    results = []
+    for ev in events[:limit]:
+        actor_user = db.get_user(ev.user_id)
+        results.append({
+            "id": ev.event_id,
+            "type": ev.event_type,
+            "actor": actor_user.username if actor_user else ev.user_id,
+            "tweet_id": ev.target_tweet_id,
+            "created_at": ev.created_at.isoformat(),
+        })
+    return results
 
 
 # ==================== Health Check ====================
