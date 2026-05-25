@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { PERSONA_COLOR } from '@/lib/persona';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
@@ -26,19 +27,6 @@ interface UserResult {
   persona: string;
   interests: string[];
 }
-
-const PERSONA_EMOJI: Record<string, string> = {
-  founder: '🚀',
-  journalist: '📰',
-  engineer: '⚙️',
-  investor: '💰',
-  content_creator: '🎨',
-  researcher: '🔬',
-  analyst: '📊',
-  politician: '🏛️',
-  meme_account: '😂',
-  trader: '📈',
-};
 
 function TopicBar({ topic, count, max }: { topic: string; count: number; max: number }) {
   const pct = max > 0 ? (count / max) * 100 : 0;
@@ -135,7 +123,9 @@ export default function ExplorePage() {
                   href={`/profile/${u.user_id}`}
                   className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition"
                 >
-                  <span className="text-xl">{PERSONA_EMOJI[u.persona] ?? '👤'}</span>
+                  <span className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 ${PERSONA_COLOR[u.persona] ?? 'bg-gray-100 text-gray-700'}`}>
+                    {u.username.charAt(0).toUpperCase()}
+                  </span>
                   <div>
                     <p className="text-sm font-medium text-gray-900">{u.username}</p>
                     <p className="text-xs text-gray-400">{u.persona.replace('_', ' ')}</p>
@@ -224,13 +214,16 @@ export default function ExplorePage() {
                 ? 'bg-yellow-50 border-yellow-200'
                 : 'bg-red-50 border-red-200'
             }`}>
-              <p className="text-xs font-semibold mb-1">
-                Filter Bubble Risk:{' '}
-                {discourse.diversity_index > 0.6
-                  ? '🟢 Low'
-                  : discourse.diversity_index > 0.35
-                  ? '🟡 Moderate'
-                  : '🔴 High'}
+              <p className="text-xs font-semibold mb-1 flex items-center gap-1.5">
+                Filter Bubble Risk:
+                <span className={`inline-block w-2 h-2 rounded-full ${
+                  discourse.diversity_index > 0.6 ? 'bg-green-500' : discourse.diversity_index > 0.35 ? 'bg-yellow-500' : 'bg-red-500'
+                }`} />
+                <span className={
+                  discourse.diversity_index > 0.6 ? 'text-green-700' : discourse.diversity_index > 0.35 ? 'text-yellow-700' : 'text-red-700'
+                }>
+                  {discourse.diversity_index > 0.6 ? 'Low' : discourse.diversity_index > 0.35 ? 'Moderate' : 'High'}
+                </span>
               </p>
               <p className="text-xs text-gray-600">
                 {discourse.diversity_index > 0.6
@@ -254,7 +247,9 @@ export default function ExplorePage() {
                 className="border border-gray-200 rounded-xl p-4 hover:bg-gray-50 transition flex flex-col gap-2"
               >
                 <div className="flex items-center gap-2">
-                  <span className="text-2xl">{PERSONA_EMOJI[u.persona] ?? '👤'}</span>
+                  <span className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 ${PERSONA_COLOR[u.persona] ?? 'bg-gray-100 text-gray-700'}`}>
+                    {u.username.charAt(0).toUpperCase()}
+                  </span>
                   <div className="min-w-0">
                     <p className="text-sm font-semibold text-gray-900 truncate">{u.username}</p>
                     <p className="text-xs text-gray-400 truncate">{u.persona.replace('_', ' ')}</p>
