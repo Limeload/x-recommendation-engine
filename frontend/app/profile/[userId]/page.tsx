@@ -5,34 +5,9 @@ import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { Heart, Repeat, ChatCircle, BookmarkSimple, UserPlus, UserMinus } from 'phosphor-react';
 import { User, Tweet } from '@/types';
+import { PERSONA_COLOR } from '@/lib/persona';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-
-const PERSONA_EMOJI: Record<string, string> = {
-  founder: '🚀',
-  journalist: '📰',
-  engineer: '⚙️',
-  investor: '💰',
-  content_creator: '🎨',
-  researcher: '🔬',
-  analyst: '📊',
-  politician: '🏛️',
-  meme_account: '😂',
-  trader: '📈',
-};
-
-const PERSONA_COLOR: Record<string, string> = {
-  founder: 'bg-indigo-100 text-indigo-800',
-  journalist: 'bg-sky-100 text-sky-800',
-  engineer: 'bg-slate-100 text-slate-800',
-  investor: 'bg-emerald-100 text-emerald-800',
-  content_creator: 'bg-pink-100 text-pink-800',
-  researcher: 'bg-violet-100 text-violet-800',
-  analyst: 'bg-amber-100 text-amber-800',
-  politician: 'bg-red-100 text-red-800',
-  meme_account: 'bg-yellow-100 text-yellow-800',
-  trader: 'bg-green-100 text-green-800',
-};
 
 function getTimeAgo(dateStr: string): string {
   const diff = (Date.now() - new Date(dateStr).getTime()) / 1000;
@@ -122,8 +97,8 @@ export default function ProfilePage() {
         <div className="px-6 pt-6 pb-4 border-b border-gray-200">
           <div className="flex items-start justify-between">
             <div className="flex items-center gap-4">
-              <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center text-3xl">
-                {PERSONA_EMOJI[user.persona] ?? '👤'}
+              <div className={`w-16 h-16 rounded-full flex items-center justify-center text-2xl font-bold ${PERSONA_COLOR[user.persona] ?? 'bg-gray-100 text-gray-700'}`}>
+                {user.username.charAt(0).toUpperCase()}
               </div>
               <div>
                 <h2 className="text-xl font-bold text-gray-900">{user.username}</h2>
@@ -186,7 +161,9 @@ export default function ProfilePage() {
             tweets.map(tweet => (
               <div key={tweet.tweet_id} className="px-6 py-4 border-b border-gray-100 hover:bg-gray-50 transition">
                 <div className="flex items-center gap-2 mb-2">
-                  <span className="text-lg">{PERSONA_EMOJI[user.persona] ?? '👤'}</span>
+                  <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${PERSONA_COLOR[user.persona] ?? 'bg-gray-100 text-gray-700'}`}>
+                    {user.username.charAt(0).toUpperCase()}
+                  </span>
                   <span className="font-semibold text-sm text-gray-900">{user.username}</span>
                   <span className="text-gray-300">·</span>
                   <span className="text-xs text-gray-400">{getTimeAgo(tweet.created_at)}</span>
